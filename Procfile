@@ -1,0 +1,1 @@
+web: gunicorn -c gunicorn-railway.conf.py api:app

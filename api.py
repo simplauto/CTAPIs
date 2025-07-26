@@ -381,11 +381,18 @@ def internal_error(error):
     }), 500
 
 if __name__ == '__main__':
-    print("🚀 Démarrage de l'API UTAC-OTC...")
-    print("📖 Documentation disponible sur: http://localhost:5000/")
-    print("🏥 Health check: http://localhost:5000/health")
-    print("🔍 Exemples:")
-    print("   - Recherche par agrément: http://localhost:5000/agreement/S044C203")
-    print("   - Recherche par département: http://localhost:5000/department/04")
+    import os
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Port dynamique pour Railway, Heroku, etc.
+    port = int(os.environ.get('PORT', 5000))
+    
+    print("🚀 Démarrage de l'API UTAC-OTC...")
+    print(f"📖 Documentation disponible sur: http://localhost:{port}/")
+    print(f"🏥 Health check: http://localhost:{port}/health")
+    print("🔍 Exemples:")
+    print(f"   - Recherche par agrément: http://localhost:{port}/agreement/S044C203")
+    print(f"   - Recherche par département: http://localhost:{port}/department/04")
+    
+    # En production, utiliser Gunicorn au lieu du serveur de dev Flask
+    debug_mode = os.environ.get('FLASK_ENV') == 'development'
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)
