@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guide d'installation VPS - API UTAC-OTC</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        h3 {
+            color: #555;
+            margin-top: 25px;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        code {
+            background: #f1f2f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 90%;
+        }
+        pre {
+            background: #2f3640;
+            color: #f1f2f6;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            color: #f1f2f6;
+        }
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .command-block {
+            background: #2f3640;
+            color: #00d894;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #00d894;
+            margin: 15px 0;
+        }
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+        .toc {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        .toc ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .toc a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Guide d'installation VPS - API UTAC-OTC</h1>
+        
+        <div class="info">
+            <strong>À propos :</strong> Ce guide vous explique comment installer et déployer l'API UTAC-OTC sur un serveur VPS (comme OVH, Digital Ocean, AWS EC2, etc.) avec Ubuntu 20.04/22.04.
+        </div>
+
+        <div class="toc">
+            <h3>📋 Sommaire</h3>
+            <ul>
+                <li><a href="#prerequisites">1. Prérequis</a></li>
+                <li><a href="#server-setup">2. Configuration du serveur</a></li>
+                <li><a href="#app-installation">3. Installation de l'application</a></li>
+                <li><a href="#production-config">4. Configuration pour la production</a></li>
+                <li><a href="#nginx-setup">5. Configuration Nginx (optionnel)</a></li>
+                <li><a href="#monitoring">6. Monitoring et maintenance</a></li>
+                <li><a href="#troubleshooting">7. Dépannage</a></li>
+            </ul>
+        </div>
+
+        <h2 id="prerequisites">1. 📋 Prérequis</h2>
+        
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Composant</th>
+                    <th>Version minimale</th>
+                    <th>Recommandé</th>
+                </tr>
+                <tr>
+                    <td>Système d'exploitation</td>
+                    <td>Ubuntu 18.04</td>
+                    <td>Ubuntu 22.04 LTS</td>
+                </tr>
+                <tr>
+                    <td>RAM</td>
+                    <td>1 GB</td>
+                    <td>2 GB+</td>
+                </tr>
+                <tr>
+                    <td>Stockage</td>
+                    <td>10 GB</td>
+                    <td>20 GB+</td>
+                </tr>
+                <tr>
+                    <td>Python</td>
+                    <td>3.8</td>
+                    <td>3.9+</td>
+                </tr>
+                <tr>
+                    <td>Accès</td>
+                    <td>SSH root/sudo</td>
+                    <td>SSH avec clés</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Important :</strong> Ce guide utilise des exemples pour OVH VPS, mais fonctionne sur tous les VPS Ubuntu/Debian.
+        </div>
+
+        <h2 id="server-setup">2. 🔧 Configuration du serveur</h2>
+
+        <div class="step">
+            <h3>Étape 1 : Connexion SSH et mise à jour</h3>
+            <div class="command-block">
+                <pre><code># Connexion à votre VPS (remplacez par votre IP)
+ssh root@votre-ip-vps
+
+# Mise à jour du système
+apt update && apt upgrade -y</code></pre>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>Étape 2 : Installation des dépendances système</h3>
+            <div class="command-block">
+                <pre><code># Installation de Python, pip et autres outils
+apt install -y python3 python3-pip python3-venv git curl wget
+
+# Installation d'outils système utiles
+apt install -y htop nano vim ufw fail2ban</code></pre>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>Étape 3 : Configuration du firewall</h3>
+            <div class="command-block">
+                <pre><code># Configuration UFW
+ufw allow ssh
+ufw allow 80
+ufw allow 443
+ufw allow 5000  # Port de l'API (temporaire pour les tests)
+ufw --force enable</code></pre>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>Étape 4 : Création d'un utilisateur dédié</h3>
+            <div class="command-block">
+                <pre><code># Créer un utilisateur pour l'application
+adduser utac-api
+
+# Ajouter aux groupes nécessaires
+usermod -aG sudo utac-api
+
+# Passer à l'utilisateur créé
+su - utac-api</code></pre>
+            </div>
+        </div>
+
+        <h2 id="app-installation">3. 📦 Installation de l'application</h2>
+
+        <div class="step">
+            <h3>Étape 1 : Récupération du code source</h3>
+            <div class="command-block">
+                <pre><code># Créer le répertoire de l'application
+mkdir -p ~/utac-api
+cd ~/utac-api
+
+# Si vous avez un repository Git
+# git clone https://github.com/votre-repo/utac-api.git .
+
+# Sinon, créer manuellement les fichiers (voir ci-dessous)</code></pre>
+            </div>
+            
+            <div class="info">
+                <strong>💡 Alternative :</strong> Si vous n'avez pas de repository Git, vous devez copier manuellement les fichiers suivants sur le serveur :
+                <ul>
+                    <li><code>api.py</code> - Fichier principal de l'API</li>
+                    <li><code>utac_scraper.py</code> - Module de scraping</li>
+                    <li><code>requirements.txt</code> - Dépendances Python</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>Étape 2 : Création de l'environnement virtuel</h3>
+            <div class="command-block">
+                <pre><code># Créer l'environnement virtuel
+python3 -m venv venv
+
+# Activer l'environnement virtuel
+source venv/bin/activate
+
+# Vérifier que pip est à jour
+pip install --upgrade pip</code></pre>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>Étape 3 : Installation des dépendances Python</h3>
+            <div class="command-block">
+                <pre><code># Si vous avez requirements.txt
+pip install -r requirements.txt
+
+# Sinon, installation manuelle
+pip install Flask==2.3.3 Flask-CORS==4.0.0 requests==2.31.0 beautifulsoup4==4.12.2 urllib3==2.0.7 gunicorn==21.2.0</code></pre>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>Étape 4 : Test de l'installation</h3>
+            <div class="command-block">
+                <pre><code># Test rapide de l'API
+python api.py</code></pre>
+            </div>
+            
+            <div class="success">
+                Si tout fonctionne, vous devriez voir :
+                <pre><code>🚀 Démarrage de l'API UTAC-OTC...
+📖 Documentation disponible sur: http://localhost:5000/
+🏥 Health check: http://localhost:5000/health</code></pre>
+            </div>
+            
+            <p>Testez depuis un autre terminal :</p>
+            <div class="command-block">
+                <pre><code>curl http://localhost:5000/health</code></pre>
+            </div>
+        </div>
+
+        <h2 id="production-config">4. ⚙️ Configuration pour la production</h2>
+
+        <div class="step">
+            <h3>Étape 1 : Configuration Gunicorn</h3>
+            <p>Créez le fichier de configuration Gunicorn :</p>
+            <div class="command-block">
+                <pre><code># Créer le fichier gunicorn.conf.py
+nano ~/utac-api/gunicorn.conf.py</code></pre>
+            </div>
+            
+            <p>Contenu du fichier :</p>
+            <pre><code># Configuration Gunicorn pour API UTAC-OTC
+bind = "0.0.0.0:5000"
+workers = 4
+worker_class = "sync"
+worker_connections = 1000
+timeout = 120
+keepalive = 5
+max_requests = 1000
+max_requests_jitter = 100
+preload_app = True
+daemon = False
+
+# Logging
+accesslog = "/home/utac-api/utac-api/logs/access.log"
+errorlog = "/home/utac-api/utac-api/logs/error.log"
+loglevel = "info"
+access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(D)s'
+
+# Sécurité
+user = "utac-api"
+group = "utac-api"</code></pre>
+        </div>
+
+        <div class="step">
+            <h3>Étape 2 : Création des répertoires de logs</h3>
+            <div class="command-block">
+                <pre><code>mkdir -p ~/utac-api/logs</code></pre>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>Étape 3 : Service systemd</h3>
+            <p>Créer le service systemd (en tant que root) :</p>
+            <div class="command-block">
+                <pre><code># Passer en root
+sudo su -
+
+# Créer le fichier service
+nano /etc/systemd/system/utac-api.service</code></pre>
+            </div>
+            
+            <p>Contenu du fichier service :</p>
+            <pre><code>[Unit]
+Description=API UTAC-OTC - Centres de contrôle technique français
+After=network.target
+
+[Service]
+Type=exec
+User=utac-api
+Group=utac-api
+WorkingDirectory=/home/utac-api/utac-api
+Environment=PATH=/home/utac-api/utac-api/venv/bin
+ExecStart=/home/utac-api/utac-api/venv/bin/gunicorn -c gunicorn.conf.py api:app
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=5
+
+# Sécurité
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/utac-api/utac-api
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+        </div>
+
+        <div class="step">
+            <h3>Étape 4 : Activation du service</h3>
+            <div class="command-block">
+                <pre><code># Recharger systemd
+systemctl daemon-reload
+
+# Activer et démarrer le service
+systemctl enable utac-api
+systemctl start utac-api
+
+# Vérifier le statut
+systemctl status utac-api</code></pre>
+            </div>
+        </div>
+
+        <h2 id="nginx-setup">5. 🌐 Configuration Nginx (optionnel mais recommandé)</h2>
+
+        <div class="step">
+            <h3>Étape 1 : Installation de Nginx</h3>
+            <div class="command-block">
+                <pre><code>apt install -y nginx</code></pre>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>Étape 2 : Configuration du site</h3>
+            <div class="command-block">
+                <pre><code># Créer la configuration du site
+nano /etc/nginx/sites-available/utac-api</code></pre>
+            </div>
+            
+            <p>Contenu de la configuration :</p>
+            <pre><code>server {
+    listen 80;
+    server_name votre-domaine.com;  # Remplacez par votre domaine ou IP
+
+    # Logs
+    access_log /var/log/nginx/utac-api.access.log;
+    error_log /var/log/nginx/utac-api.error.log;
+
+    # Gzip compression
+    gzip on;
+    gzip_types text/plain application/json;
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Timeouts pour les longues requêtes (/all-centers)
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 600s;
+        proxy_read_timeout 600s;
+    }
+
+    # Sécurité
+    add_header X-Content-Type-Options nosniff;
+    add_header X-Frame-Options DENY;
+    add_header X-XSS-Protection "1; mode=block";
+}</code></pre>
+        </div>
+
+        <div class="step">
+            <h3>Étape 3 : Activation du site</h3>
+            <div class="command-block">
+                <pre><code># Activer le site
+ln -s /etc/nginx/sites-available/utac-api /etc/nginx/sites-enabled/
+
+# Désactiver le site par défaut
+rm /etc/nginx/sites-enabled/default
+
+# Tester la configuration
+nginx -t
+
+# Redémarrer Nginx
+systemctl restart nginx</code></pre>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>Étape 4 : Configuration SSL avec Let's Encrypt (recommandé)</h3>
+            <div class="command-block">
+                <pre><code># Installation de Certbot
+apt install -y certbot python3-certbot-nginx
+
+# Obtention du certificat SSL
+certbot --nginx -d votre-domaine.com
+
+# Auto-renouvellement
+systemctl enable certbot.timer</code></pre>
+            </div>
+        </div>
+
+        <h2 id="monitoring">6. 📊 Monitoring et maintenance</h2>
+
+        <div class="step">
+            <h3>Script de monitoring</h3>
+            <p>Créez un script de monitoring simple :</p>
+            <div class="command-block">
+                <pre><code># Créer le script
+nano ~/utac-api/monitor.sh</code></pre>
+            </div>
+            
+            <p>Contenu du script :</p>
+            <pre><code>#!/bin/bash
+# Script de monitoring API UTAC-OTC
+
+echo "=== Statut API UTAC-OTC - $(date) ==="
+
+# Test de l'API
+echo "🔍 Test de l'API..."
+curl -s http://localhost:5000/health | jq '.' || echo "❌ API non accessible"
+
+# Statut du service
+echo "📊 Statut du service..."
+systemctl is-active utac-api
+
+# Utilisation des ressources
+echo "💾 Utilisation mémoire..."
+ps aux | grep gunicorn | grep -v grep | awk '{print $4"%"}'
+
+# Logs récents
+echo "📝 Logs récents..."
+tail -5 /home/utac-api/utac-api/logs/error.log
+
+echo "=== Fin du monitoring ==="</code></pre>
+            
+            <div class="command-block">
+                <pre><code># Rendre exécutable
+chmod +x ~/utac-api/monitor.sh</code></pre>
+            </div>
+        </div>
+
+        <div class="step">
+            <h3>Commandes utiles</h3>
+            <div class="command-block">
+                <pre><code># Redémarrer l'API
+sudo systemctl restart utac-api
+
+# Voir les logs en temps réel
+sudo journalctl -u utac-api -f
+
+# Voir les logs d'erreur
+tail -f ~/utac-api/logs/error.log
+
+# Voir les performances
+htop
+
+# Test rapide de l'API
+curl http://localhost:5000/health</code></pre>
+            </div>
+        </div>
+
+        <h2 id="troubleshooting">7. 🔧 Dépannage</h2>
+
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>Problème</th>
+                    <th>Cause possible</th>
+                    <th>Solution</th>
+                </tr>
+                <tr>
+                    <td>Service ne démarre pas</td>
+                    <td>Erreur dans gunicorn.conf.py</td>
+                    <td><code>sudo journalctl -u utac-api</code></td>
+                </tr>
+                <tr>
+                    <td>API lente</td>
+                    <td>Pas assez de workers</td>
+                    <td>Augmenter <code>workers</code> dans gunicorn.conf.py</td>
+                </tr>
+                <tr>
+                    <td>Timeout sur /all-centers</td>
+                    <td>Timeout trop court</td>
+                    <td>Augmenter <code>timeout</code> et configurer Nginx</td>
+                </tr>
+                <tr>
+                    <td>Erreur 502 Bad Gateway</td>
+                    <td>Gunicorn arrêté</td>
+                    <td><code>sudo systemctl start utac-api</code></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Points importants :</strong>
+            <ul>
+                <li>L'endpoint <code>/all-centers</code> prend 6-8 minutes et consomme beaucoup de ressources</li>
+                <li>Surveillez l'utilisation mémoire avec <code>htop</code></li>
+                <li>Configurez des timeouts appropriés pour Nginx</li>
+                <li>Sauvegardez régulièrement vos données si vous stockez des résultats</li>
+            </ul>
+        </div>
+
+        <div class="success">
+            <strong>✅ Installation terminée !</strong><br>
+            Votre API UTAC-OTC est maintenant installée et prête à l'emploi. Vous pouvez accéder à :
+            <ul>
+                <li>API : <code>http://votre-domaine.com/</code></li>
+                <li>Health check : <code>http://votre-domaine.com/health</code></li>
+                <li>Documentation : <code>http://votre-domaine.com/docs-inline.html</code></li>
+            </ul>
+        </div>
+
+        <div class="info">
+            <strong>📞 Support :</strong> Pour toute question ou problème, consultez les logs avec <code>sudo journalctl -u utac-api</code> ou contactez l'équipe technique.
+        </div>
+    </div>
+</body>
+</html>

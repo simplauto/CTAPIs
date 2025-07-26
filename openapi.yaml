@@ -1,0 +1,595 @@
+openapi: 3.0.3
+info:
+  title: API UTAC-OTC
+  description: |
+    API pour récupérer les informations des centres de contrôle technique français.
+    Basée sur les données officielles UTAC-OTC avec support de la pagination automatique.
+    
+    ## Fonctionnalités
+    - Recherche par numéro d'agrément
+    - Recherche par département (avec pagination automatique)
+    - Récupération complète de tous les centres de France
+    
+    ## Codes départements supportés
+    - Départements métropolitains: 01-95 (format "01", "02", etc.)
+    - Départements d'outre-mer: 971-989
+    
+    ## Installation
+    Pour installer cette API sur un serveur VPS (OVH, Digital Ocean, etc.), consultez le [Guide d'installation détaillé](./installation-guide.html).
+    
+    ### Installation rapide
+    ```bash
+    # 1. Télécharger les fichiers
+    git clone <repository-url> utac-api
+    cd utac-api
+    
+    # 2. Installer les dépendances
+    pip install -r requirements.txt
+    
+    # 3. Lancer l'API
+    python api.py
+    ```
+  version: 1.0.0
+  contact:
+    name: API UTAC-OTC
+    url: https://www.utac-otc.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+externalDocs:
+  description: Guide d'installation VPS
+  url: ./installation-guide.html
+
+servers:
+  - url: http://localhost:5000
+    description: Serveur de développement
+  - url: http://localhost:8001
+    description: Serveur de staging
+  - url: http://localhost:8002
+    description: Serveur de production
+
+tags:
+  - name: health
+    description: Vérification de l'état de l'API
+  - name: agreement
+    description: Recherche par numéro d'agrément
+  - name: department
+    description: Recherche par département
+  - name: bulk
+    description: Opérations sur l'ensemble des données
+
+paths:
+  /:
+    get:
+      tags:
+        - health
+      summary: Documentation de l'API
+      description: Page d'accueil avec la documentation complète de l'API
+      responses:
+        '200':
+          description: Documentation de l'API
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiDocumentation'
+
+  /health:
+    get:
+      tags:
+        - health
+      summary: Vérification de l'état de l'API
+      description: Endpoint de health check pour vérifier que l'API fonctionne correctement
+      responses:
+        '200':
+          description: API en fonctionnement
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: healthy
+                service: UTAC-OTC API
+                version: "1.0.0"
+
+  /agreement/{agreement_number}:
+    get:
+      tags:
+        - agreement
+      summary: Recherche par numéro d'agrément (GET)
+      description: |
+        Récupère les informations détaillées d'un centre de contrôle technique 
+        en utilisant son numéro d'agrément.
+        
+        **Exemple de numéro d'agrément:** S044C203
+      parameters:
+        - name: agreement_number
+          in: path
+          required: true
+          description: Numéro d'agrément du centre de contrôle technique
+          schema:
+            type: string
+            pattern: '^S[0-9]{3}[A-Z][0-9]{3}$'
+            example: S044C203
+      responses:
+        '200':
+          description: Informations du centre trouvées
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgreementResponse'
+        '400':
+          description: Numéro d'agrément invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Aucun centre trouvé pour ce numéro d'agrément
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /agreement:
+    post:
+      tags:
+        - agreement
+      summary: Recherche par numéro d'agrément (POST)
+      description: |
+        Récupère les informations détaillées d'un centre de contrôle technique 
+        en utilisant son numéro d'agrément via une requête POST avec body JSON.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgreementRequest'
+            example:
+              agreement_number: S044C203
+      responses:
+        '200':
+          description: Informations du centre trouvées
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgreementResponse'
+        '400':
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Aucun centre trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /department/{department_code}:
+    get:
+      tags:
+        - department
+      summary: Recherche par département (GET)
+      description: |
+        Récupère tous les centres de contrôle technique d'un département.
+        La pagination est gérée automatiquement par l'API.
+        
+        **Codes départements supportés:**
+        - Départements métropolitains: 01-95 (utilisez "01", "02", etc.)
+        - Départements d'outre-mer: 971-989
+        
+        **Exemples:** "04", "69", "75", "971"
+      parameters:
+        - name: department_code
+          in: path
+          required: true
+          description: Code du département (format "01", "69", "971", etc.)
+          schema:
+            type: string
+            pattern: '^(0[1-9]|[1-9][0-9]|97[1-9])$'
+            example: "04"
+      responses:
+        '200':
+          description: Liste des centres du département
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentResponse'
+        '400':
+          description: Code département invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Aucun centre trouvé pour ce département
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /department:
+    post:
+      tags:
+        - department
+      summary: Recherche par département (POST)
+      description: |
+        Récupère tous les centres de contrôle technique d'un département
+        via une requête POST avec body JSON.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentRequest'
+            example:
+              department_code: "04"
+      responses:
+        '200':
+          description: Liste des centres du département
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentResponse'
+        '400':
+          description: Requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Aucun centre trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Erreur interne du serveur
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /all-centers:
+    get:
+      tags:
+        - bulk
+      summary: Récupération complète de tous les centres
+      description: |
+        Récupère TOUS les centres de contrôle technique de France.
+        
+        ⚠️ **ATTENTION:** Cette opération est très longue et consommatrice de ressources:
+        - Durée: 6-8 minutes
+        - Centres traités: ~6800 centres
+        - Départements: 114 départements
+        - Pagination automatique sur tous les départements
+        
+        **Utilisez cette route avec précaution en production.**
+        
+        Cette opération génère des statistiques complètes:
+        - Temps de traitement par département
+        - Nombre de centres par département
+        - Taux de traitement global
+        - Gestion des erreurs département par département
+      responses:
+        '200':
+          description: Tous les centres de France récupérés avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllCentersResponse'
+        '500':
+          description: Erreur lors de la récupération complète
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    Center:
+      type: object
+      description: Informations complètes d'un centre de contrôle technique
+      properties:
+        agreement_number:
+          type: string
+          description: Numéro d'agrément officiel du centre
+          example: S044C203
+        raison_sociale:
+          type: string
+          description: Nom officiel de l'entreprise
+          example: CONTROLE TECHNIQUE SAINT SEB
+        enseigne:
+          type: string
+          description: Nom commercial du centre
+          example: AUTO SECURITE
+        adresse:
+          type: string
+          description: Adresse complète du centre
+          example: 329 ROUTE DE CLISSON ZAC DES GRIPOTS
+        ville:
+          type: string
+          description: Ville et code postal
+          example: ST SEBASTIEN SUR LOIRE 44230
+        telephone:
+          type: string
+          description: Numéro de téléphone
+          example: 02 40 80 06 00
+        option:
+          type: string
+          description: Options disponibles (GAZ, etc.)
+          example: GAZ*
+        site_internet:
+          type: string
+          description: Site web du centre
+          example: ""
+        department:
+          type: string
+          description: Code département (présent dans les résultats globaux)
+          example: "44"
+      required:
+        - agreement_number
+        - raison_sociale
+        - enseigne
+        - adresse
+        - ville
+        - telephone
+        - option
+        - site_internet
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: État de l'API
+          example: healthy
+        service:
+          type: string
+          description: Nom du service
+          example: UTAC-OTC API
+        version:
+          type: string
+          description: Version de l'API
+          example: "1.0.0"
+      required:
+        - status
+        - service
+        - version
+
+    AgreementRequest:
+      type: object
+      properties:
+        agreement_number:
+          type: string
+          description: Numéro d'agrément à rechercher
+          example: S044C203
+      required:
+        - agreement_number
+
+    AgreementResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Statut de la requête
+          example: true
+        data:
+          $ref: '#/components/schemas/Center'
+      required:
+        - success
+        - data
+
+    DepartmentRequest:
+      type: object
+      properties:
+        department_code:
+          type: string
+          description: Code du département à rechercher
+          example: "04"
+      required:
+        - department_code
+
+    DepartmentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Statut de la requête
+          example: true
+        data:
+          type: object
+          properties:
+            department_code:
+              type: string
+              description: Code du département
+              example: "04"
+            total_centers:
+              type: integer
+              description: Nombre total de centres dans le département
+              example: 25
+            centers:
+              type: array
+              description: Liste des centres du département
+              items:
+                $ref: '#/components/schemas/Center'
+          required:
+            - department_code
+            - total_centers
+            - centers
+      required:
+        - success
+        - data
+
+    AllCentersResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Statut de la requête
+          example: true
+        timestamp:
+          type: number
+          format: double
+          description: Timestamp Unix de génération des données
+          example: 1753465089.897016
+        processing_time:
+          type: object
+          properties:
+            total_seconds:
+              type: number
+              format: double
+              description: Durée totale en secondes
+              example: 357.65
+            total_minutes:
+              type: number
+              format: double
+              description: Durée totale en minutes
+              example: 5.96
+          required:
+            - total_seconds
+            - total_minutes
+        summary:
+          type: object
+          description: Statistiques globales de traitement
+          properties:
+            total_centers:
+              type: integer
+              description: Nombre total de centres récupérés
+              example: 6841
+            total_departments:
+              type: integer
+              description: Nombre de départements traités
+              example: 114
+            successful_departments:
+              type: integer
+              description: Départements traités avec succès
+              example: 114
+            failed_departments:
+              type: integer
+              description: Départements en erreur
+              example: 0
+            average_centers_per_department:
+              type: number
+              format: double
+              description: Moyenne de centres par département
+              example: 60.0
+            processing_rate_centers_per_second:
+              type: number
+              format: double
+              description: Vitesse de traitement (centres/seconde)
+              example: 19.1
+          required:
+            - total_centers
+            - total_departments
+            - successful_departments
+            - failed_departments
+            - average_centers_per_department
+            - processing_rate_centers_per_second
+        data:
+          type: object
+          properties:
+            total_centers:
+              type: integer
+              description: Nombre total de centres
+              example: 6841
+            centers:
+              type: array
+              description: Liste complète de tous les centres
+              items:
+                $ref: '#/components/schemas/Center'
+          required:
+            - total_centers
+            - centers
+        department_statistics:
+          type: object
+          description: Statistiques détaillées par département
+          additionalProperties:
+            type: object
+            properties:
+              centers_count:
+                type: integer
+                description: Nombre de centres dans ce département
+              duration_seconds:
+                type: number
+                format: double
+                description: Temps de traitement pour ce département
+              status:
+                type: string
+                description: Statut du traitement
+                enum: [success, error, exception]
+        errors:
+          type: array
+          description: Liste des erreurs rencontrées
+          items:
+            type: string
+          example: []
+      required:
+        - success
+        - timestamp
+        - processing_time
+        - summary
+        - data
+        - department_statistics
+        - errors
+
+    ApiDocumentation:
+      type: object
+      properties:
+        message:
+          type: string
+          example: API UTAC-OTC - Recherche de centres de contrôle technique
+        version:
+          type: string
+          example: "1.0.0"
+        endpoints:
+          type: object
+          description: Liste des endpoints disponibles
+        example_usage:
+          type: object
+          description: Exemples d'utilisation
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Toujours false pour les erreurs
+          example: false
+        error:
+          type: string
+          description: Message d'erreur principal
+          example: Numéro d'agrément invalide
+        details:
+          type: string
+          description: Détails supplémentaires sur l'erreur
+          example: Le format du numéro d'agrément doit être SXXXAXXX
+        agreement_number:
+          type: string
+          description: Numéro d'agrément recherché (si applicable)
+        department_code:
+          type: string
+          description: Code département recherché (si applicable)
+      required:
+        - success
+        - error

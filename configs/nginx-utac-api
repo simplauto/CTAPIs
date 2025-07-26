@@ -1,0 +1,93 @@
+server {
+    listen 80;
+    server_name _;  # Accepte tous les noms de domaine - remplacez par votre domaine
+
+    # Logs
+    access_log /var/log/nginx/utac-api.access.log;
+    error_log /var/log/nginx/utac-api.error.log;
+
+    # Gzip compression
+    gzip on;
+    gzip_types text/plain application/json application/javascript text/css;
+    gzip_min_length 1000;
+
+    # Rate limiting (optionnel)
+    # limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+    # limit_req zone=api burst=20 nodelay;
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Timeouts pour les longues requêtes (/all-centers)
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 600s;
+        proxy_read_timeout 600s;
+        
+        # Buffers
+        proxy_buffering on;
+        proxy_buffer_size 4k;
+        proxy_buffers 8 4k;
+    }
+
+    # Endpoint spécial pour /all-centers avec timeout étendu
+    location /all-centers {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Timeouts étendus pour cette route
+        proxy_connect_timeout 120s;
+        proxy_send_timeout 900s;    # 15 minutes
+        proxy_read_timeout 900s;    # 15 minutes
+        
+        # Buffers plus grands
+        proxy_buffering off;  # Désactiver le buffering pour le streaming
+    }
+
+    # Sécurité
+    add_header X-Content-Type-Options nosniff;
+    add_header X-Frame-Options DENY;
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+    
+    # Cacher la version Nginx
+    server_tokens off;
+}
+
+# Configuration HTTPS (si vous utilisez SSL)
+# Décommentez et modifiez selon vos besoins
+#
+# server {
+#     listen 443 ssl http2;
+#     server_name votre-domaine.com;
+#
+#     # Certificats SSL
+#     ssl_certificate /etc/letsencrypt/live/votre-domaine.com/fullchain.pem;
+#     ssl_certificate_key /etc/letsencrypt/live/votre-domaine.com/privkey.pem;
+#
+#     # Configuration SSL sécurisée
+#     ssl_protocols TLSv1.2 TLSv1.3;
+#     ssl_ciphers ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-RSA-AES128-GCM-SHA256;
+#     ssl_prefer_server_ciphers off;
+#     ssl_session_cache shared:SSL:10m;
+#     ssl_session_timeout 10m;
+#
+#     # HSTS
+#     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+#
+#     # Même configuration que HTTP
+#     include /etc/nginx/sites-available/utac-api-common.conf;
+# }
+#
+# # Redirection HTTP vers HTTPS
+# server {
+#     listen 80;
+#     server_name votre-domaine.com;
+#     return 301 https://$server_name$request_uri;
+# }
