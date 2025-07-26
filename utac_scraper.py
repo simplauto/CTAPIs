@@ -253,6 +253,7 @@ class UTACScraper:
             'enseigne': '',
             'adresse': '',
             'ville': '',
+            'code_postal': '',
             'telephone': '',
             'option': '',
             'site_internet': '',
@@ -303,7 +304,13 @@ class UTACScraper:
                         details['agreement_number'] = cells[1].get_text().strip()
                         details['enseigne'] = cells[2].get_text().strip()  # Colonne cachée
                         details['adresse'] = cells[3].get_text().strip()
-                        details['ville'] = cells[4].get_text().strip()
+                        
+                        # Parser ville et code postal
+                        ville_complete = cells[4].get_text().strip()
+                        ville, code_postal = self._parse_ville_code_postal(ville_complete)
+                        details['ville'] = ville
+                        details['code_postal'] = code_postal
+                        
                         details['telephone'] = cells[5].get_text().strip()  # Colonne cachée
                         details['option'] = cells[6].get_text().strip()
                         details['site_internet'] = cells[7].get_text().strip()  # Colonne cachée
@@ -337,6 +344,7 @@ class UTACScraper:
             'enseigne': '',
             'adresse': '',
             'ville': '',
+            'code_postal': '',
             'telephone': '',
             'url': detail_url
         }
@@ -354,7 +362,10 @@ class UTACScraper:
             elif 'adresse' in line_lower and ':' in line:
                 details['adresse'] = line.split(':', 1)[1].strip()
             elif 'ville' in line_lower and ':' in line:
-                details['ville'] = line.split(':', 1)[1].strip()
+                ville_complete = line.split(':', 1)[1].strip()
+                ville, code_postal = self._parse_ville_code_postal(ville_complete)
+                details['ville'] = ville
+                details['code_postal'] = code_postal
             elif 'tél' in line_lower and ':' in line:
                 details['telephone'] = line.split(':', 1)[1].strip()
         
@@ -374,7 +385,9 @@ class UTACScraper:
                     elif 'adresse' in key:
                         details['adresse'] = value
                     elif 'ville' in key:
-                        details['ville'] = value
+                        ville, code_postal = self._parse_ville_code_postal(value)
+                        details['ville'] = ville
+                        details['code_postal'] = code_postal
                     elif 'tél' in key:
                         details['telephone'] = value
         
@@ -542,17 +555,52 @@ class UTACScraper:
             # DOM-TOM : codes postaux = numéro département
             return department_code in row_text
     
+    def _parse_ville_code_postal(self, ville_complete):
+        """
+        Parse le champ ville qui contient ville + code postal
+        
+        Formats possibles:
+        - "METZ 57000"
+        - "ST SEBASTIEN SUR LOIRE 44230" 
+        - "PARIS 16EME ARRONDISSEMENT 75016"
+        - "AIX EN PROVENCE 13090"
+        
+        Returns:
+            tuple: (ville, code_postal)
+        """
+        if not ville_complete or not ville_complete.strip():
+            return '', ''
+        
+        ville_complete = ville_complete.strip()
+        
+        # Rechercher le code postal (5 chiffres) à la fin
+        import re
+        match = re.search(r'(.+?)\s+(\d{5})$', ville_complete)
+        
+        if match:
+            ville = match.group(1).strip()
+            code_postal = match.group(2)
+            return ville, code_postal
+        else:
+            # Si pas de code postal trouvé, tout va dans ville
+            return ville_complete, ''
+    
     def _extract_center_from_row(self, cells):
         """Extrait les informations d'un centre depuis une ligne de tableau"""
         if len(cells) < 8:
             return None
+        
+        # Parser ville et code postal
+        ville_complete = cells[4].get_text().strip()
+        ville, code_postal = self._parse_ville_code_postal(ville_complete)
         
         return {
             'raison_sociale': cells[0].get_text().strip(),
             'agreement_number': cells[1].get_text().strip(),
             'enseigne': cells[2].get_text().strip(),
             'adresse': cells[3].get_text().strip(),
-            'ville': cells[4].get_text().strip(),
+            'ville': ville,
+            'code_postal': code_postal,
             'telephone': cells[5].get_text().strip(),
             'option': cells[6].get_text().strip(),
             'site_internet': cells[7].get_text().strip() if len(cells) > 7 else ''

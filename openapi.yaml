@@ -329,8 +329,12 @@ components:
           example: 329 ROUTE DE CLISSON ZAC DES GRIPOTS
         ville:
           type: string
-          description: Ville et code postal
-          example: ST SEBASTIEN SUR LOIRE 44230
+          description: Nom de la ville
+          example: ST SEBASTIEN SUR LOIRE
+        code_postal:
+          type: string
+          description: Code postal
+          example: "44230"
         telephone:
           type: string
           description: Numéro de téléphone
